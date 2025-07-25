@@ -1,0 +1,152 @@
+---
+title: "Data Preprocessing"
+author: "Tyler Katz"
+date: "2025-07-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+
+## LOADING & MERGING DATA
+
+This section loads the primary datasets required for analysis:
+
+  -`train.csv` contains daily sales records for individual Rossmann stores, including features such as sales, customer traffic, promotions, and holidays.
+
+  -`store.csv` provides store-level metadata, including store type, assortment level, and competition indicators.
+
+The two datasets are merged using the `Store` identifier to create a unified dataset (`merged_data`) that combines both transactional and contextual information for each store. This merged dataset forms the foundation for all subsequent preprocessing, feature engineering, and modeling.
+```{r}
+
+#Load training and store metadata
+train <- read_csv("../Data/train.csv", show_col_types = FALSE)
+store <- read_csv("../Data/store.csv", show_col_types = FALSE)
+
+#Preview data
+glimpse(train)
+glimpse(store)
+
+#Merge training data with store meta data
+merged_data <- left_join(train, store, by = "Store")
+
+#Preview merged data
+glimpse(merged_data)
+
+```
+
+## HANDLING MISSING VALUES
+
+This section identifies and addresses missing values in the merged dataset to ensure it is ready for modeling. A column-wise summary of missing values is generated before and after processing to validate that all gaps have been addressed.
+
+The following imputation strategies are applied:
+
+  -`CompetitionDistance`: Imputed with the median value, as it is a continuous variable with predictive relevance and no valid default.
+
+  -`CompetitionOpenSinceMonth` and `CompetitionOpenSinceYear`: Imputed with their respective medians to preserve temporal continuity. These values are often missing when competition has not yet opened.
+
+  -`Promo2SinceWeek` and `Promo2SinceYear`: Imputed with -1 to indicate that the store does not participate in the `Promo2` program. These values are only relevant for stores with `Promo2` = 1.
+
+  -`PromoInterval`: Replaced with "None" to explicitly denote the absence of a recurring promotion schedule.
+
+These choices ensure that missingness is handled in a way that maintains both the integrity and interpretability of the data.
+
+```{r}
+
+print("Columns with missing values")
+#Check for missing values in each column
+sapply(merged_data, function(x) sum(is.na(x)))
+
+#Impute or handle missing values
+merged_data <- merged_data %>% mutate(
+  
+  #Impute competition distance
+  CompetitionDistance = ifelse(
+    is.na(CompetitionDistance),
+    median(CompetitionDistance, na.rm = TRUE),
+    CompetitionDistance
+    ),
+  
+  #Impute competition open since month
+  CompetitionOpenSinceMonth = ifelse(
+      is.na(CompetitionOpenSinceMonth),
+      median(CompetitionOpenSinceMonth, na.rm = TRUE),
+      CompetitionOpenSinceMonth
+    ),
+  
+  #Impute competition open since year 
+  CompetitionOpenSinceYear = ifelse(
+      is.na(CompetitionOpenSinceYear),
+      median(CompetitionOpenSinceYear, na.rm = TRUE),
+      CompetitionOpenSinceYear
+    ),
+  
+  #Add dummy values to indicate no Promo2
+  Promo2SinceWeek = ifelse(is.na(Promo2SinceWeek), -1, Promo2SinceWeek),
+  Promo2SinceYear = ifelse(is.na(Promo2SinceYear), -1, Promo2SinceYear),
+  
+  #Add a none value to indiviate no promo intervals
+  PromoInterval = replace_na(PromoInterval, "None")
+)
+
+print("Columns with missing values after processing")
+#Verifies all missing values are handled
+sapply(merged_data, function(x) sum(is.na(x)))
+```
+
+##FEATURE ENGINEERING
+
+This section extracts and derives new features from the existing Date and Promo columns to support both data visualization and predictive modeling:
+
+  -The `Date` column is converted to a proper date type to enable time-based operations.
+
+  -Calendar components such as `Year`, `Month`, `Day`, and `Week` are extracted to capture seasonal and temporal patterns in sales behavior.
+
+  -The `DayOfWeek` variable is relabeled using descriptive weekday names (Mon–Sun) to enhance interpretability in plots and summaries.
+
+  -A binary `IsWeekend` indicator is created to flag Saturdays and Sundays, which often exhibit different sales dynamics compared to weekdays.
+
+  -The `IsPromo` column transforms the binary Promo variable into a readable categorical label, allowing for clearer comparisons in visualizations and summaries.
+
+These engineered features provide a more intuitive and structured representation of time-based patterns and promotional effects, enhancing both exploratory analysis and model performance.
+```{r}
+
+#Creates features for data visualization and modeling
+merged_data <- merged_data %>% mutate(
+  
+  #Converting date column to date type variable
+  Date = ymd(Date),
+  
+  #Extracting elements of date
+  Year = year(Date),
+  Month = month(Date),
+  Day = day(Date),
+  Week = week(Date),
+  
+  #Labeling DayOfWeek column for more effective visualization
+  DayOfWeekLabel = factor(
+    DayOfWeek,
+    level = 1:7,
+    labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+  ),
+  
+  #Creating a weekend indication variable based on day of week labels
+  IsWeekend = ifelse(DayOfWeekLabel %in% c("Sat", "Sun"), 1, 0),
+  
+  #Creating a promotion indicator column based on the binary variable for more effective visualizations
+  IsPromo = ifelse(Promo == 1, "Promo", "No Promo")
+)
+```
+
+##SAVING CLEANED DATA
+
+The fully preprocessed dataset is saved as a CSV file to the `Data/` directory. This file serves as the finalized input for downstream analysis, modeling, or dashboard applications.
+```{r}
+
+#Saves clean data to CSV
+write_csv(merged_data, "../Data/preprocessed_data.csv")
+```
