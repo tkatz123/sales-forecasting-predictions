@@ -1,0 +1,186 @@
+---
+title: "Exploratory Data Analysis"
+author: "Tyler Katz"
+date: "2025-07-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+#List of packages that are required to be installed and loaded
+required_packages <- c("tidyverse", "lubridate", "ggplot2", "skimr", "plotly")
+
+#Retrieves list of packages that are installed
+installed_packages <- rownames(installed.packages())
+
+#Checks to see if requires packages are installed and libraries them, if not downloads them
+for (pkg in required_packages) {
+  if (!(pkg %in% installed_packages)) {
+    install.packages(pkg, dependencies = TRUE)
+  }
+  library(pkg, character.only = TRUE)
+}
+```
+
+##LOADING DATA  
+```{r}
+
+#Reading in preprocessed data
+df <- read_csv('../Data/preprocessed_data.csv')
+
+```
+
+##DESCRIPTIVE STATISTICS
+```{r}
+
+#Output a readable summary of variables in dataframe
+skimr::skim(df)
+
+```
+
+To gain an initial understanding of the cleaned dataset, we used the `skimr::skim()` function to generate a structured summary of the data. The dataset consists of 1,017,209 observations and 25 variables, spanning sales transactions across multiple Rossmann store locations.
+
+*Column Types*
+
+  -6 Character variables
+
+  -1 Date variable
+
+  -18 Numeric variables
+  
+*Date Range*
+
+  -The dataset spans from January 1, 2013 to July 31,2015, covering a 2.5-year period of daily sales data.
+  -A total of 942 unique dates are present in the data.
+  
+*Numeric Variables*
+
+  -All numeric variables have no null values 
+  -Key features such as `Sales`, `Customers`, `Promo`, and `CompetitionDistance` show a wide range of values and some skewness (e.g., high standard deviation in `Sales` and `CompetitionDistance`).
+
+  -Temporal components (`Year`, `Month`, `Week`, `Day`) and engineered features (`IsWeekend`, `Promo2SinceWeek`) are consistent and correctly formatted.
+
+  -`Promo2SinceWeek` and `Promo2SinceYear` include placeholder values (`-1`) indicating non-participation in the promo program, as expected.
+  
+*Character / Categorical Variables*
+
+  -All character columns are complete with no missing or empty entries.
+
+  -`DayOfWeekLabel` and `IsPromo` provide readable categorical groupings to support visualization and summarization.
+
+  -Variables like `StoreType`, `Assortment`, and `PromoInterval` show appropriate uniqueness levels and no data quality issues (e.g., no trailing whitespace or unexpected values).
+  
+*Summary*
+
+Overall, the dataset is well-structured and clean, with no missing values across key fields. Temporal granularity, promotional indicators, and store-level metadata are all present in a machine-learning–ready format. This provides a strong foundation for downstream visual exploration and predictive modeling.
+
+##DATA VISUALIZATIONS 
+```{r}
+
+#Creates a dataframe with total and average daily sales accross all stores
+daily_sales <- df %>%
+  group_by(Date) %>%
+  summarise(
+    total_sales = sum(Sales),
+    avg_sales = mean(Sales)
+  )
+
+#Creates a line graph visualizing total daily sales over time
+ggplot(daily_sales, aes(x = Date, y = total_sales)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Total Daily Sales (All Stores)", y = "Total Sales", x = "Date")
+```
+
+This chart shows total daily sales aggregated across all stores. While noisy, it reveals weekly seasonality and periodic spikes that suggest holiday or promotional effects. More interpretable views follow below.
+
+```{r}
+
+#Creates a dataframe with total sales across all stores for each month
+monthly_sales <- df %>%
+  mutate(Month = floor_date(Date, "month")) %>%
+  group_by(Month) %>%
+  summarise(total_sales = sum(Sales))
+
+#Creates a line graph visualizing total sales trends per month
+ggplot(monthly_sales, aes(x = Month, y = total_sales)) +
+  geom_line(color = "steelblue") +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "3 months") +
+  labs(title = "Monthly Sales Trend", y = "Total Sales", x = "Month")
+
+```
+
+This line chart displays the total sales aggregated by month across all Rossmann stores. The plot highlights clear seasonal fluctuations and long-term trends over the two-and-a-half-year period. Notably, there are recurring dips during mid-year months and pronounced spikes in late 2013 and early 2015, suggesting possible effects of holidays, promotional campaigns, or other seasonal events. This monthly aggregation smooths out daily volatility and provides a clearer view of overall business performance.
+
+```{r}
+
+#Creates a column chart visualize sales per day of the week
+ggplot(df, aes(x = DayOfWeekLabel, y = Sales)) +
+  geom_col(fill = "steelblue") +
+  labs(title = "Sales Distribution by Day of the Week", x = "Day", y = "Sales")
+
+```
+
+This bar chart displays total sales aggregated by each day of the week across all stores. The highest sales volumes occur on Mondays, followed by Tuesdays and Fridays, while Sundays show a sharp drop—likely due to widespread store closures on that day. This pattern reflects typical consumer shopping behavior and operational schedules, and it should be considered when building forecasting models or designing promotional strategies.
+
+```{r}
+
+#Creates a boxplot visualizing impact of promotions on sales
+ggplot(df, aes(x = IsPromo, y = Sales)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Sales by Promotion Status", x = "Promo", y = "Sales")
+
+```
+
+This boxplot compares sales distributions on days with and without active promotions. Sales are noticeably higher during promotional periods, with the median and interquartile range both elevated compared to non-promo days. The presence of extreme outliers in both groups suggests variability in store performance and potential high-impact promotional events. Overall, the plot confirms that promotions are strongly associated with increased sales across Rossmann stores.
+
+```{r}
+
+#Creates a boxplot visualizing impact of holiday's on sales
+ggplot(df, aes(x = StateHoliday, y = Sales)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Sales by State Holiday Status", x = "State Holiday", y = "Sales")
+
+```
+
+This boxplot illustrates the distribution of sales on regular days (`0`) compared to various state holiday types (`a`, `b`, `c`). Sales are substantially higher on non-holiday days, while transactions on state holidays are minimal or nonexistent—indicating that many stores are likely closed during these periods. The pattern highlights the significant operational impact of public holidays on sales performance and should be considered when modeling demand or planning staffing.
+
+```{r}
+
+#Creates a boxplot visualizing impact of store type on sales
+ggplot(df, aes(x = StoreType, y = Sales)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Sales by Store Type", y = "Sales")
+
+```
+
+This boxplot compares sales distributions across the four store types (`a`, `b`, `c`, and `d`). Store Type `b` exhibits the highest median sales and widest interquartile range, suggesting stronger overall performance and greater variability. In contrast, Store Types `a`, `c`, and `d` show similar but lower median sales levels. These differences may reflect variations in store format, size, or regional market characteristics, and highlight the importance of accounting for store type in sales forecasting models.
+
+```{r}
+
+#Creates a boxplot visualizing the impact of assortment on sales
+ggplot(df, aes(x = Assortment, y = Sales)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Sales by Assortment Type", y = "Sales")
+
+```
+
+This boxplot displays the distribution of sales across the three assortment types (`a`, `b`, and `c`). Assortment Type `b`, which represents stores with a broader or more premium product selection, shows the highest median sales and a wider spread, indicating stronger and more variable performance. Types `a` and `c` have lower and more comparable sales distributions. These results suggest that assortment strategy plays a meaningful role in driving store-level revenue.
+
+##CONCLUDING THOUGHTS
+
+This exploratory data analysis provided a comprehensive overview of the Rossmann sales dataset, revealing key patterns, trends, and relationships that will inform downstream modeling.
+
+Several important insights emerged:
+
+  -*Sales exhibit clear temporal patterns*, with strong weekly seasonality and notable monthly fluctuations.
+
+  -*Promotions are strongly associated with increased sales*, emphasizing the value of incorporating promotional features in predictive models.
+
+  -*Sales performance varies significantly by store type and assortment*, highlighting structural differences in store operations and customer behavior.
+
+  -*Holiday and weekend effects* are substantial, with most stores closed on Sundays and state holidays, leading to sharp declines in daily sales.
+
+These findings support the development of a robust forecasting model that accounts for both temporal dynamics and store-specific attributes. Future steps will involve selecting appropriate modeling techniques, and evaluating predictive performance.
+
+This EDA serves as a critical foundation for understanding the business context and shaping a data-driven approach to sales forecasting

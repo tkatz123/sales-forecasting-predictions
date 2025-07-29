@@ -7,9 +7,20 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-library(tidyverse)
-library(lubridate)
-library(janitor)
+
+#List of packages that are required to be installed and loaded
+required_packages <- c("tidyverse", "lubridate", "janitor")
+
+#Retrieves list of packages that are installed
+installed_packages <- rownames(installed.packages())
+
+#Checks to see if requires packages are installed and libraries them, if not downloads them
+for (pkg in required_packages) {
+  if (!(pkg %in% installed_packages)) {
+    install.packages(pkg, dependencies = TRUE)
+  }
+  library(pkg, character.only = TRUE)
+}
 ```
 
 ## LOADING & MERGING DATA
