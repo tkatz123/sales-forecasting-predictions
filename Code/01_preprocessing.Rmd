@@ -8,19 +8,12 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
-#List of packages that are required to be installed and loaded
-required_packages <- c("tidyverse", "lubridate", "janitor")
+#Load utility function
+source("Utils/load_packages.R")
 
-#Retrieves list of packages that are installed
-installed_packages <- rownames(installed.packages())
+#Use function to install and library packages
+load_required_packages(c("tidyverse", "lubridate", "janitor"))
 
-#Checks to see if requires packages are installed and libraries them, if not downloads them
-for (pkg in required_packages) {
-  if (!(pkg %in% installed_packages)) {
-    install.packages(pkg, dependencies = TRUE)
-  }
-  library(pkg, character.only = TRUE)
-}
 ```
 
 ## LOADING & MERGING DATA
@@ -32,6 +25,7 @@ This section loads the primary datasets required for analysis:
   -`store.csv` provides store-level metadata, including store type, assortment level, and competition indicators.
 
 The two datasets are merged using the `Store` identifier to create a unified dataset (`merged_data`) that combines both transactional and contextual information for each store. This merged dataset forms the foundation for all subsequent preprocessing, feature engineering, and modeling.
+
 ```{r}
 
 #Load training and store metadata
@@ -100,7 +94,7 @@ merged_data <- merged_data %>% mutate(
   Promo2SinceWeek = ifelse(is.na(Promo2SinceWeek), -1, Promo2SinceWeek),
   Promo2SinceYear = ifelse(is.na(Promo2SinceYear), -1, Promo2SinceYear),
   
-  #Add a none value to indiviate no promo intervals
+  #Add a none value to indicate no promo intervals
   PromoInterval = replace_na(PromoInterval, "None")
 )
 
@@ -124,6 +118,7 @@ This section extracts and derives new features from the existing Date and Promo 
   -The `IsPromo` column transforms the binary Promo variable into a readable categorical label, allowing for clearer comparisons in visualizations and summaries.
 
 These engineered features provide a more intuitive and structured representation of time-based patterns and promotional effects, enhancing both exploratory analysis and model performance.
+
 ```{r}
 
 #Creates features for data visualization and modeling
@@ -156,8 +151,9 @@ merged_data <- merged_data %>% mutate(
 ##SAVING CLEANED DATA
 
 The fully preprocessed dataset is saved as a CSV file to the `Data/` directory. This file serves as the finalized input for downstream analysis, modeling, or dashboard applications.
+
 ```{r}
 
 #Saves clean data to CSV
-write_csv(merged_data, "../Data/preprocessed_data.csv")
+write_csv(merged_data, "../Data/preprocessed_train_data.csv")
 ```

@@ -8,26 +8,18 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
-#List of packages that are required to be installed and loaded
-required_packages <- c("tidyverse", "lubridate", "ggplot2", "skimr", "plotly")
+#Load utility function
+source("Utils/load_packages.R")
 
-#Retrieves list of packages that are installed
-installed_packages <- rownames(installed.packages())
-
-#Checks to see if requires packages are installed and libraries them, if not downloads them
-for (pkg in required_packages) {
-  if (!(pkg %in% installed_packages)) {
-    install.packages(pkg, dependencies = TRUE)
-  }
-  library(pkg, character.only = TRUE)
-}
+#Use function to install and library packages
+load_required_packages(c("tidyverse", "lubridate", "ggplot2", "skimr", "plotly"))
 ```
 
 ##LOADING DATA  
 ```{r}
 
 #Reading in preprocessed data
-df <- read_csv('../Data/preprocessed_data.csv')
+df <- read_csv('../Data/preprocessed_train_data.csv')
 
 ```
 
