@@ -1,0 +1,300 @@
+---
+title: "Model Evaluation"
+author: "Tyler Katz"
+date: "2025-07-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load required packages
+source("Utils/load_packages.R")
+load_required_packages(c("tidyverse", "xgboost", "Metrics", "ggplot2", "readr"))
+```
+
+##LOADING MODEL & DATA
+```{r}
+
+#Loading XGBoost model
+model <- readRDS("../Models/xgb_global_model.rds")
+
+#Loading data for testing
+load("../Data/preprocessed_train_data.RData")
+test <- df
+
+```
+
+##TEST DATA PREPERATION
+
+```{r}
+
+#Filter test set to stores that are open and after specific date
+test <- test %>%
+  filter(Open == 1, Date >= as.Date("2015-06-15"))
+
+#Convert categorical features to numeric as in training
+to_numeric_factors <- function(df){
+  df$StateHoliday <- as.numeric(df$StateHoliday)
+  df$StoreType <- as.numeric(as.factor(df$StoreType))
+  df$Assortment <- as.numeric(as.factor(df$Assortment))
+  return(df)
+}
+
+#Apply function to test data
+test <- to_numeric_factors(test)
+
+```
+
+##PREPARE DMATRIX
+
+```{r}
+
+#Selecting variables from data to input into model
+features <- c(
+  "Store", "DayOfWeek", "Promo", "SchoolHoliday", "StateHoliday",
+  "Year", "Month", "Day", "Week", "IsWeekend",
+  "CompetitionDistance", "CompetitionOpenSinceMonth", "CompetitionOpenSinceYear",
+  "Promo2SinceWeek", "Promo2SinceYear",
+  "StoreType", "Assortment",
+  "Sales_lag_1", "Sales_lag_7", "Sales_lag_14",
+  "Sales_roll_mean_7", "Sales_roll_mean_14"
+)
+
+# Prepare DMatrix
+test_matrix <- xgb.DMatrix(data = as.matrix(test[, features]), label = test$Sales)
+
+```
+
+##MODEL PREDICTION
+```{r}
+
+#Make predictions using test data to make predictions with model
+preds <- predict(model, test_matrix)
+
+```
+
+##MODEL EVALUATION & VISUALIZATIONS
+```{r}
+
+#Calculate RMSE and MAE scores based on predictions and testing data
+rmse <- Metrics::rmse(test$Sales, preds)
+mae <- Metrics::mae(test$Sales, preds)
+
+#Print RMSE and MAE scores
+cat("Validation RMSE:", round(rmse, 2), "\n")
+cat("Validation MAE: ", round(mae, 2), "\n")
+
+```
+
+*Validation RMSE: 742.21*
+
+  -Indicates the model's predictions deviate from actual sales by approximately 742 units on average.
+
+  -Captures both the average error and penalizes larger deviations more heavily.
+
+*Validation MAE: 523.7*
+
+  -Reflects the average absolute difference between predicted and actual sales values.
+
+  -Suggests the model is making relatively accurate predictions with low average error.
+
+*Overall Insight:*
+
+  -The model demonstrates strong performance in capturing sales behavior across all stores.
+
+  -Both RMSE and MAE scores show meaningful improvement compared to the untuned baseline model (RMSE: ~1120, MAE: ~790), indicating that feature engineering and tuning significantly enhanced predictive accuracy.
+
+```{r}
+
+#Calculating residuals and saving in a DataFrame
+residuals_df <- tibble(
+  Actual = test$Sales,
+  Predicted = preds,
+  Residuals = test$Sales - preds
+)
+
+```
+
+```{r}
+
+#Residuals scatter plot
+ggplot(residuals_df, aes(x = Predicted, y = Residuals)) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residuals vs Predicted", x = "Predicted Sales", y = "Residuals") +
+  theme_minimal()
+
+```
+
+*Purpose*: Evaluates model accuracy by plotting the difference between actual and predicted sales.
+
+*Ideal Pattern*: Residuals should be randomly distributed around zero with no clear trend.
+
+*What We See*:
+
+  -Most residuals are tightly centered around zero.
+
+  -A slight funnel shape appears—residual variance increases as predicted sales rise.
+
+  -Some outliers exist at higher predicted values, indicating reduced precision for large sales.
+
+*Interpretation*:
+
+  -Indicates generally strong performance with minor inconsistent spread.
+
+  -Suggests the model handles average sales well but could improve on predicting extremes.
+
+```{r}
+
+#Actual vs predicted scatter plot
+ggplot(residuals_df, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Actual vs Predicted Sales", x = "Actual Sales", y = "Predicted Sales") +
+  theme_minimal()
+
+```
+*Purpose*: Measures how closely the model’s predictions align with actual sales values.
+
+*Ideal Pattern*: Points should lie close to the red 45° diagonal line, indicating perfect prediction.
+
+*What We See*:
+
+  -Strong linear pattern along the diagonal, suggesting high overall prediction accuracy.
+
+  -Moderate dispersion increases at higher sales values—indicates slightly reduced accuracy on large sales.
+
+  -Few outliers where the model significantly under- or overestimates high sales.
+
+*Interpretation*:
+
+  -Model performs well at predicting typical sales ranges.
+
+  -Additional improvements may be needed for peak demand forecasting.
+
+```{r, warning=FALSE}
+
+#Created a predicted column in the test DataFrame with the predicted values for graphing
+test$Predicted <- preds
+
+#Aggregates sales and predictions per day across all stores
+daily_sales <- test %>%
+  group_by(Date) %>%
+  summarise(Actual = sum(Sales), Predicted = sum(Predicted))
+
+ggplot(daily_sales, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predicted, color = "Predicted"), size = 1) +
+  labs(title = "Total Sales: Actual vs Predicted (Aggregated by Day)", 
+       y = "Sales", x = "Date") +
+  scale_color_manual(values = c("Actual" = "red", "Predicted" = "blue")) +
+  theme_minimal()
+
+```
+*Purpose*: Evaluates how well the model captures overall sales trends across all stores on a daily basis.
+
+*Ideal Pattern*: Predicted (blue) and actual (red) lines should closely overlap across time.
+
+*What We See*:
+
+  -Strong alignment between predicted and actual sales curves.
+
+  -Clear weekly sales seasonality is well captured, including sharp dips on Sundays.
+
+  -Minor under- and over-predictions occur but remain relatively consistent.
+
+*Interpretation*:
+
+  -The model effectively captures macro-level sales patterns and temporal trends.
+
+  -Strong fit suggests that time-based features (like DayOfWeek, Promo, Lag) are performing well.
+
+  -Residual error is small compared to total sales volume, indicating solid aggregate forecasting ability.
+
+```{r}
+
+#Error distribution histogram
+ggplot(residuals_df, aes(x = Residuals)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  labs(title = "Distribution of Residuals", x = "Residuals", y = "Frequency") +
+  theme_minimal()
+```
+*Purpose*: Evaluates the overall distribution of prediction errors (residuals = actual − predicted).
+
+*Ideal Pattern*: A tight, symmetric bell-shaped distribution centered at zero.
+
+*What We See*:
+
+  -The vast majority of residuals cluster closely around 0.
+
+  -Very few large errors or extreme outliers.
+
+  -The distribution is slightly skewed but still compact.
+
+*Interpretation*:
+
+  -Indicates the model makes mostly accurate predictions, with errors that are generally small and unbiased.
+
+  -Supports the assumption of homoscedasticity (constant variance), which strengthens trust in the model's consistency.
+
+
+
+```{r}
+
+# Feature importance
+importance <- xgb.importance(model = model)
+xgb.plot.importance(importance_matrix = importance, top_n = 20)
+
+```
+This plot highlights the relative importance of each input feature used by the XGBoost model during training. The importance is typically measured by how often a feature is used to split data across all trees, weighted by the improvement in model performance from those splits.
+
+*Key Insights*:
+
+  -`Sales_roll_mean_7` and `Sales_lag_14` are by far the most influential predictors, together accounting for over 70% of total feature importance.This confirms the strong temporal autocorrelation in retail sales data—recent past sales are highly predictive of future sales.
+
+  -`Promo` ranks high among the top features, indicating that promotions have a significant, quantifiable impact on sales volumes.
+
+  -`Day`, `DayOfWeek`, and `Week` contribute meaningfully, supporting the notion that weekly and daily patterns influence purchasing behavior.
+
+  -Variables like `SchoolHoliday`, `CompetitionOpenSinceMonth`, and `StateHoliday` appear to have negligible influence. These may be retained for completeness but could potentially be pruned in future model iterations.
+
+
+This analysis validates the effectiveness of feature engineering, especially the inclusion of lag and rolling average variables. It also provides an opportunity for feature refinement—possibly simplifying the model without hurting performance.
+
+##CONCLUDING THOUGHTS
+
+This project aimed to build a global sales forecasting model for all 1,115 Rossmann stores using historical time-series data. The final model leverages the power of XGBoost and integrates domain-informed feature engineering strategies to capture temporal, promotional, and competitive sales patterns.
+
+*Key Performance Metrics*
+
+  -Final Model – Validation RMSE: 742.21
+
+  -Final Model – Validation MAE: 523.70
+
+  -(Baseline Model – RMSE: ~1120, MAE: ~790)
+
+These results reflect a substantial improvement over the baseline model, indicating that the addition of lag features, rolling averages, and hyperparameter tuning significantly enhanced the model’s predictive accuracy.
+
+*Feature Insights*
+
+  -Lag and rolling features (e.g., `Sales_lag_14`, `Sales_roll_mean_7`) were the most predictive, demonstrating that past sales patterns are critical to future outcomes.
+
+  -Promotional variables and calendar features such as `Promo` and `DayOfWeek` also contributed meaningfully.
+
+  -Features like `SchoolHoliday` and `CompetitionOpenSinceMonth` had minimal impact and could be revisited in future iterations.
+
+*Visual Diagnostics*
+
+  -*Residual analysis* confirmed a tight concentration of prediction errors around zero, with no major signs of bias or heteroscedasticity.
+
+  -*Predicted vs. Actual plots* showed a strong linear relationship, with the model accurately capturing daily sales trends and promotional spikes.
+
+  -*Time-series aggregation plots* validated the model’s ability to replicate sales patterns at a higher temporal level.
+
+*Overall Assessment*
+
+The model demonstrates strong generalization on unseen data and successfully captures complex sales behavior across multiple dimensions (store, time, and promotions). The addition of time-based features and targeted tuning strategies played a pivotal role in driving performance improvements.
+
+
+

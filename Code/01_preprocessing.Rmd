@@ -12,11 +12,11 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 source("Utils/load_packages.R")
 
 #Use function to install and library packages
-load_required_packages(c("tidyverse", "lubridate", "janitor"))
+load_required_packages(c("tidyverse", "lubridate", "janitor", "zoo"))
 
 ```
 
-## LOADING & MERGING DATA
+##LOADING & MERGING DATA
 
 This section loads the primary datasets required for analysis:
 
@@ -44,7 +44,7 @@ glimpse(merged_data)
 
 ```
 
-## HANDLING MISSING VALUES
+##HANDLING MISSING VALUES
 
 This section identifies and addresses missing values in the merged dataset to ensure it is ready for modeling. A column-wise summary of missing values is generated before and after processing to validate that all gaps have been addressed.
 
@@ -107,7 +107,7 @@ sapply(merged_data, function(x) sum(is.na(x)))
 
 ##FEATURE ENGINEERING
 
-This section extracts and derives new features from the existing Date and Promo columns to support both data visualization and predictive modeling:
+This section extracts and derives new features from the existing `Date`, `Promo`, and sales columns to support both data visualization and predictive modeling:
 
   -The `Date` column is converted to a proper date type to enable time-based operations.
 
@@ -118,6 +118,10 @@ This section extracts and derives new features from the existing Date and Promo 
   -A binary `IsWeekend` indicator is created to flag Saturdays and Sundays, which often exhibit different sales dynamics compared to weekdays.
 
   -The `IsPromo` column transforms the binary Promo variable into a readable categorical label, allowing for clearer comparisons in visualizations and summaries.
+  
+  -*Lag features* such as `Sales_lag_1`, `Sales_lag_7`, and `Sales_lag_14` are introduced to capture short-term and weekly historical sales trends for each store.
+
+  -*Rolling mean features* (`Sales_roll_mean_7` and `Sales_roll_mean_14`) are added to summarize recent average sales performance, helping the model recognize local seasonality and momentum.
 
 These engineered features provide a more intuitive and structured representation of time-based patterns and promotional effects, enhancing both exploratory analysis and model performance.
 
@@ -150,12 +154,35 @@ merged_data <- merged_data %>% mutate(
 )
 ```
 
+```{r}
+
+#Add lag and rolling features per Store
+add_lag_features <- function(data) {
+  data <- data %>%
+    arrange(Store, Date) %>%
+    group_by(Store) %>%
+    mutate(
+      Sales_lag_1 = lag(Sales, 1),
+      Sales_lag_7 = lag(Sales, 7),
+      Sales_lag_14 = lag(Sales, 14),
+      Sales_roll_mean_7 = zoo::rollmean(Sales, k = 7, fill = NA, align = "right"),
+      Sales_roll_mean_14 = zoo::rollmean(Sales, k = 14, fill = NA, align = "right")
+    ) %>%
+    ungroup()
+  return(data)
+}
+
+merged_data <- add_lag_features(merged_data)
+```
+
 ##SAVING CLEANED DATA
 
 The fully preprocessed dataset is saved as a CSV file to the `Data/` directory. This file serves as the finalized input for downstream analysis, modeling, or dashboard applications.
 
 ```{r}
 
-#Saves clean data to CSV
-write_csv(merged_data, "../Data/preprocessed_train_data.csv")
+df <- merged_data
+
+#Saves clean data to RData file
+save(df, file = "../Data/preprocessed_train_data.RData")
 ```

@@ -19,7 +19,7 @@ load_required_packages(c("tidyverse", "lubridate", "ggplot2", "skimr", "plotly")
 ```{r}
 
 #Reading in preprocessed data
-df <- read_csv('../Data/preprocessed_train_data.csv')
+load("../Data/preprocessed_train_data.RData")
 
 ```
 
@@ -31,7 +31,7 @@ skimr::skim(df)
 
 ```
 
-To gain an initial understanding of the cleaned dataset, we used the `skimr::skim()` function to generate a structured summary of the data. The dataset consists of 1,017,209 observations and 25 variables, spanning sales transactions across multiple Rossmann store locations.
+To gain an initial understanding of the cleaned dataset, we used the `skimr::skim()` function to generate a structured summary of the data. The dataset consists of 1,017,209 observations and 30 variables, spanning sales transactions across multiple Rossmann store locations.
 
 *Column Types*
 
@@ -39,21 +39,25 @@ To gain an initial understanding of the cleaned dataset, we used the `skimr::ski
 
   -1 Date variable
 
-  -18 Numeric variables
+  -23 Numeric variables
   
 *Date Range*
 
   -The dataset spans from January 1, 2013 to July 31,2015, covering a 2.5-year period of daily sales data.
+  
   -A total of 942 unique dates are present in the data.
   
 *Numeric Variables*
 
-  -All numeric variables have no null values 
+  -Most numeric variables have no missing values, ensuring completeness for model training.
+  
   -Key features such as `Sales`, `Customers`, `Promo`, and `CompetitionDistance` show a wide range of values and some skewness (e.g., high standard deviation in `Sales` and `CompetitionDistance`).
 
   -Temporal components (`Year`, `Month`, `Week`, `Day`) and engineered features (`IsWeekend`, `Promo2SinceWeek`) are consistent and correctly formatted.
 
   -`Promo2SinceWeek` and `Promo2SinceYear` include placeholder values (`-1`) indicating non-participation in the promo program, as expected.
+  
+  -Lag and rolling average features (`Sales_lag_1`, `Sales_lag_7`, `Sales_lag_14`, `Sales_roll_mean_7`, `Sales_roll_mean_14`) do contain missing values, but only in the first few rows of each store due to the nature of time-based calculations. These are expected and will be handled appropriately during model preprocessing.
   
 *Character / Categorical Variables*
 

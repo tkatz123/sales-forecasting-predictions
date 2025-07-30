@@ -7,7 +7,8 @@ source("Code/Utils/load_packages.R")
 load_required_packages(c("tidyverse", "lubridate", "janitor", "xgboost", "Metrics"))
 
 #Reading in preprocessed training data
-train <- read_csv("Data/preprocessed_train_data.csv", show_col_types = FALSE)
+load("Data/preprocessed_train_data.RData")
+train <- df
 
 # --- Data Preparation ---
 
@@ -43,7 +44,9 @@ features <- c(
   "Year", "Month", "Day", "Week", "IsWeekend",
   "CompetitionDistance", "CompetitionOpenSinceMonth", "CompetitionOpenSinceYear",
   "Promo2SinceWeek", "Promo2SinceYear",
-  "StoreType", "Assortment"
+  "StoreType", "Assortment",
+  "Sales_lag_1", "Sales_lag_7", "Sales_lag_14",
+  "Sales_roll_mean_7", "Sales_roll_mean_14"
 )
 
 #Converts DataFrames to DMatrix where the features are stored as data, and the target is stores as label

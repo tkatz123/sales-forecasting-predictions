@@ -13,12 +13,22 @@ source("Code/Utils/load_packages.R")
 load_required_packages(c("tidyverse", "lubridate", "janitor", "xgboost", "Metrics"))
 
 #Reading in preprocessed training data
-train <- read_csv("Data/preprocessed_train_data.csv", show_col_types = FALSE)
+
+load("Data/preprocessed_train_data.RData")
+train <- df
 
 # --- Data Preparation ---
 
 #Filtering data to only stores that are open to avoid extreme values
 train <- train %>% filter(Open == 1)
+
+#Remove rows with NA values from lag/rolling features
+train <- train %>%
+  filter(across(
+    c(Sales_lag_1, Sales_lag_7, Sales_lag_14,
+      Sales_roll_mean_7, Sales_roll_mean_14),
+    ~ !is.na(.)
+  ))
 
 #Specify last 6 weeks of data as cutoff date for model validation
 cutoff_date <- as.Date("2015-06-15")
@@ -49,7 +59,9 @@ features <- c(
   "Year", "Month", "Day", "Week", "IsWeekend",
   "CompetitionDistance", "CompetitionOpenSinceMonth", "CompetitionOpenSinceYear",
   "Promo2SinceWeek", "Promo2SinceYear",
-  "StoreType", "Assortment"
+  "StoreType", "Assortment",
+  "Sales_lag_1", "Sales_lag_7", "Sales_lag_14",
+  "Sales_roll_mean_7", "Sales_roll_mean_14"
 )
 
 #Converts DataFrames to DMatrix where the features are stored as data, and the target is stores as label
