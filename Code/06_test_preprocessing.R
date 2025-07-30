@@ -38,6 +38,10 @@ test_processed <- test_processed %>%
   left_join(last_day, by = "Store") %>%
   arrange(Store, Date)
 
+#Replaces NA values in Open column to 0
+test_processed <- test_processed %>%
+  mutate(Open = replace_na(Open, 0))
+
 # --- Save Preprocessed Test Data ---
 
 save(test_processed, file = "Data/preprocessed_test_data.RData")
