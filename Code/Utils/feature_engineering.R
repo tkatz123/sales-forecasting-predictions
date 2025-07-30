@@ -16,13 +16,13 @@ feature_engineering <- function(df) {
   df %>%
     mutate(
       # Convert date to Date type
-      Date = ymd(date),
+      Date = ymd(Date),
       
       # Extract temporal features
-      Year = year(date),
-      Month = month(date),
-      Day = day(date),
-      Week = week(date),
+      Year = year(Date),
+      Month = month(Date),
+      Day = day(Date),
+      Week = week(Date),
       
       #Impute competition distance
       CompetitionDistance = ifelse(

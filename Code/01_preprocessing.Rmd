@@ -95,7 +95,9 @@ merged_data <- merged_data %>% mutate(
   Promo2SinceYear = ifelse(is.na(Promo2SinceYear), -1, Promo2SinceYear),
   
   #Add a none value to indicate no promo intervals
-  PromoInterval = replace_na(PromoInterval, "None")
+  PromoInterval = replace_na(PromoInterval, "None"),
+  
+  #Converts StateHoliday column to numeric
 )
 
 print("Columns with missing values after processing")

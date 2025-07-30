@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Title: Load Required Packages
+# Title: load_required_packages
 # Author: Tyler Katz
 # Description:
 # Utility function to install and load required R packages. Accepts a character
