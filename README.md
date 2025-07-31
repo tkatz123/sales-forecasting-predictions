@@ -1,4 +1,4 @@
-# sales-forecasting-predictions`
+# sales-forecasting-predictions
 
 This project builds a full **machine learning pipeline** to predict daily sales for **Rossmann stores** using historical data. It includes **preprocessing**, **feature engineering**, **exploratory data analysis**, **model training with XGBoost**, **evaluation**, and a **Shiny dashboard** for interactive predictions and visualizations.
 
@@ -46,7 +46,7 @@ This project builds a full **machine learning pipeline** to predict daily sales 
 
 - Open `06_app.R`
 
-- Select `Run App` in the top right of the code window.
+- Select `Run App` in the top right of the code window
 
 ---
 
