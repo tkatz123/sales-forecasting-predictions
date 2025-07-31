@@ -46,7 +46,8 @@ features <- c(
   "Promo2SinceWeek", "Promo2SinceYear",
   "StoreType", "Assortment",
   "Sales_lag_1", "Sales_lag_7", "Sales_lag_14",
-  "Sales_roll_mean_7", "Sales_roll_mean_14"
+  "Sales_roll_mean_7", "Sales_roll_mean_14", "Open", "IsClosedDay",
+  "IsMonthStart", "IsMonthEnd", "PromoActive", "CompetitionActive"
 )
 
 #Converts DataFrames to DMatrix where the features are stored as data, and the target is stores as label

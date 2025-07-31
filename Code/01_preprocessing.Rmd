@@ -119,6 +119,16 @@ This section extracts and derives new features from the existing `Date`, `Promo`
 
   -The `IsPromo` column transforms the binary Promo variable into a readable categorical label, allowing for clearer comparisons in visualizations and summaries.
   
+  -`IsClosedDay`: Indicates if a store was closed (`Open == 0`).
+
+  -`IsMonthStart`: Flags the first 3 days of each month.
+
+  -`IsMonthEnd`: Flags the last 3+ days of each month.
+
+  -`PromoActive`: Indicates whether a promo is active (`Promo == 1` or `Promo2SinceYear != -1`).
+
+  -`CompetitionActive`: Indicates whether a competitor has opened (based on valid `CompetitionOpenSinceYear`).
+  
   -*Lag features* such as `Sales_lag_1`, `Sales_lag_7`, and `Sales_lag_14` are introduced to capture short-term and weekly historical sales trends for each store.
 
   -*Rolling mean features* (`Sales_roll_mean_7` and `Sales_roll_mean_14`) are added to summarize recent average sales performance, helping the model recognize local seasonality and momentum.
@@ -150,7 +160,22 @@ merged_data <- merged_data %>% mutate(
   IsWeekend = ifelse(DayOfWeekLabel %in% c("Sat", "Sun"), 1, 0),
   
   #Creating a promotion indicator column based on the binary variable for more effective visualizations
-  IsPromo = ifelse(Promo == 1, "Promo", "No Promo")
+  IsPromo = ifelse(Promo == 1, "Promo", "No Promo"),
+  
+  #Create an indicator whether the store was open or not
+  IsClosedDay = ifelse(Open == 0, 1, 0),
+  
+  #Indicates if date is at the start of the month
+  IsMonthStart = ifelse(day(Date) <= 3, 1, 0),
+  
+  #Indicates if date is at the end of the month
+  IsMonthEnd = ifelse(day(Date) >= 28, 1, 0),
+  
+  #Indicates is a promo is active 
+  PromoActive = ifelse(Promo == 1 | Promo2SinceYear != -1, 1, 0),
+  
+  #Indicates if the competition is active
+  CompetitionActive = ifelse(!is.na(CompetitionOpenSinceYear), 1, 0)
 )
 ```
 

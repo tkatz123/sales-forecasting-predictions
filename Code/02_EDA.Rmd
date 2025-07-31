@@ -39,7 +39,7 @@ To gain an initial understanding of the cleaned dataset, we used the `skimr::ski
 
   -1 Date variable
 
-  -23 Numeric variables
+  -28 Numeric variables
   
 *Date Range*
 
@@ -58,6 +58,20 @@ To gain an initial understanding of the cleaned dataset, we used the `skimr::ski
   -`Promo2SinceWeek` and `Promo2SinceYear` include placeholder values (`-1`) indicating non-participation in the promo program, as expected.
   
   -Lag and rolling average features (`Sales_lag_1`, `Sales_lag_7`, `Sales_lag_14`, `Sales_roll_mean_7`, `Sales_roll_mean_14`) do contain missing values, but only in the first few rows of each store due to the nature of time-based calculations. These are expected and will be handled appropriately during model preprocessing.
+  
+Additional engineered indicators enhance model interpretability and capture operational context:
+
+  -`IsClosedDay`: Flags days when stores were closed (`Open == 0`), helping the model learn from zero-sales conditions.
+
+  -`IsMonthStart`: Indicates if the date falls within the first 3 days of the month — useful for capturing early-month consumer behavior.
+
+  -`IsMonthEnd`: Indicates if the date is in the last 4 days of the month — often tied to end-of-month promotions or salary-driven purchasing.
+
+  -`PromoActive`: Combines both standard and extended promotion periods (`Promo == 1` or `Promo2SinceYear != -1`) into a single indicator of promotional activity.
+
+  -`CompetitionActive`: Flags whether competition was active by checking the presence of a competition start year (`!is.na(CompetitionOpenSinceYear)`).
+
+These engineered features provide more structured representations of business cycles, operational factors, and behavioral patterns, improving both model accuracy and interpretability.
   
 *Character / Categorical Variables*
 
