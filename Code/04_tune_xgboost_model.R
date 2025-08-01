@@ -1,3 +1,17 @@
+# ------------------------------------------------------------------------------
+# Title: XGBoost Model Tuning
+# Description: 
+##This script performs an exhaustive grid search over key XGBoost hyperparameters 
+# (eta, max_depth, subsample, colsample_bytree, nrounds) using a time-based split 
+# of the training dataset. It evaluates each combination based on RMSE and MAE 
+# calculated on a holdout validation set (last 6 weeks of data). The best-performing 
+# configuration is saved for future model training.
+#
+# Note: This process is computationally expensive and may take several hours
+# to complete, depending on system resources.
+# 
+# ------------------------------------------------------------------------------
+
 # --- Loading Required Libraries & Data ---
 
 #Load utility function

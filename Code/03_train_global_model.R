@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # Title: Train Global Sales Forecasting Model
 # Description: Trains a single machine learning model on all stores using preprocessed
-#              training data. 
+#              training data. Calculates evaluation metrics of model using test data
 # ------------------------------------------------------------------------------
 
 # --- Loading Required Libraries & Data ---
@@ -18,9 +18,6 @@ load("Data/preprocessed_train_data.RData")
 train <- df
 
 # --- Data Preparation ---
-
-#Filtering data to only stores that are open to avoid extreme values
-#train <- train %>% filter(Open == 1)
 
 #Remove rows with NA values from lag/rolling features
 train <- train %>%
