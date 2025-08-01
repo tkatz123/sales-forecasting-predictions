@@ -108,9 +108,9 @@ Baseline performance (before tuning and feature engineering):
 
 Performance after tuning and feature engineering:
 
-- RMSE: 1172.24
+- RMSE: 663.47
 
-- MAE: 910.37
+- MAE: 438.57
 
 ---
 
@@ -150,3 +150,5 @@ This project is released under the MIT License.
 ## Acknowledgments
 
 This work is inspired by the Rossmann Store Sales competition on Kaggle and adapted as a full end-to-end forecasting project in R with an interactive Shiny dashboard.
+
+[Dataset](https://www.kaggle.com/competitions/rossmann-store-sales/data)
