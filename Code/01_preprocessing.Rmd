@@ -97,7 +97,6 @@ merged_data <- merged_data %>% mutate(
   #Add a none value to indicate no promo intervals
   PromoInterval = replace_na(PromoInterval, "None"),
   
-  #Converts StateHoliday column to numeric
 )
 
 print("Columns with missing values after processing")
@@ -107,7 +106,7 @@ sapply(merged_data, function(x) sum(is.na(x)))
 
 ##FEATURE ENGINEERING
 
-This section extracts and derives new features from the existing `Date`, `Promo`, and sales columns to support both data visualization and predictive modeling:
+This section extracts and derives new features from the existing `Date`, `Promo`, and `Sales` columns to support both data visualization and predictive modeling:
 
   -The `Date` column is converted to a proper date type to enable time-based operations.
 

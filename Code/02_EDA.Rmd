@@ -31,7 +31,7 @@ skimr::skim(df)
 
 ```
 
-To gain an initial understanding of the cleaned dataset, we used the `skimr::skim()` function to generate a structured summary of the data. The dataset consists of 1,017,209 observations and 30 variables, spanning sales transactions across multiple Rossmann store locations.
+To gain an initial understanding of the cleaned dataset, we used the `skimr::skim()` function to generate a structured summary of the data. The dataset consists of 1,017,209 observations and 35 variables, spanning sales transactions across multiple Rossmann store locations.
 
 *Column Types*
 

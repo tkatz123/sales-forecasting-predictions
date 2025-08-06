@@ -1,4 +1,4 @@
-# sales-forecasting-predictions
+# Sales Forecasting Predictions Using XGBoost
 
 This project builds a full **machine learning pipeline** to predict daily sales for **Rossmann stores** using historical data. It includes **preprocessing**, **feature engineering**, **exploratory data analysis**, **model training with XGBoost**, **evaluation**, and a **Shiny dashboard** for interactive predictions and visualizations.
 
