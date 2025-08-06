@@ -8,8 +8,6 @@
 source("Utils/load_packages.R")
 load_required_packages(c("shiny", "tidyverse", "lubridate", "xgboost", "ggplot2"))
 
-load_required_packages(c("shiny", "tidyverse", "lubridate", "xgboost", "ggplot2"))
-
 # --- Load Data and Model Once When App Launches ---
 load("../Data/preprocessed_train_data.RData")
 train_data <- df
